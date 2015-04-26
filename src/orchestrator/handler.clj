@@ -7,10 +7,15 @@
             [compojure.handler :as handler])
   (:use ring.util.response))
 
+(defn generate-response-body [response-future]
+  {:status (:status @response-future)
+   :body (:body @response-future)}
+  )
+
 (defn add-to-response [response-map response-future]
   (let [response-key (get response-future 0)
         response-promise (get response-future 1)]
-    (conj response-map {response-key (:status @response-promise)})))
+    (conj response-map {response-key (generate-response-body response-promise)})))
 
 (defn submit-single-request [result parameter]
   (conj result {(get parameter 0) (http/get (get parameter 1))}))
