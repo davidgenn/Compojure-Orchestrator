@@ -8,20 +8,23 @@
   (:use ring.util.response))
 
 (defn add-to-response [response-map response-future]
-  (println "add-to-response")
-  (println response-map)
-  (conj response-map {:resp-status (:status @response-future)} ))
+  (let [response-key (get response-future 0)
+        response-promise (get response-future 1)]
+    (conj response-map {response-key (:status @response-promise)})))
 
-(defn get-multiple-urls [urls]
-  (println "entering function")
-  (println (get urls "url"))
-  (let [futures (doall (map http/get (get urls "url")))]
+(defn submit-single-request [result parameter]
+  (conj result {(get parameter 0) (http/get (get parameter 1))}))
 
-    (doseq [resp futures]
-      (println (-> @resp :opt :url) " status: " (:status @resp) ))
-    (response (reduce add-to-response {} futures)))
+(defn submit-all-requests [params]
+  (reduce submit-single-request {} params))
 
-  )
+(defn build-response [futures]
+  (reduce add-to-response {} futures))
+
+(defn get-multiple-urls [params]
+  (let
+    [futures (submit-all-requests params)]
+    (response (build-response futures))))
 
 (defroutes app-routes
            (GET "/orchestrate" {params :query-params} (get-multiple-urls params))
